@@ -49,30 +49,54 @@ h3 { font-size: 1rem; margin-bottom: 8px; color: var(--ink-2); }
 .note { color: var(--muted); font-size: 0.8rem; }
 
 /* ===== 回答フォーム ===== */
-.q-block { padding: 18px 0; border-bottom: 1px solid var(--grid); }
+.q-block { padding: 18px 0; border-bottom: 1px solid var(--grid); scroll-margin-top: 20px; }
 .q-block:last-of-type { border-bottom: none; }
 .q-text { font-weight: 600; margin-bottom: 10px; }
-.q-req { color: var(--nps-detractor); font-size: 0.75rem; margin-left: 6px; font-weight: normal; }
-.q-opt-label { color: var(--muted); font-size: 0.75rem; margin-left: 6px; font-weight: normal; }
+.q-req { color: var(--nps-detractor); font-size: 0.75rem; margin-left: 6px; font-weight: normal; white-space: nowrap; }
+.q-opt-label { color: var(--muted); font-size: 0.75rem; margin-left: 6px; font-weight: normal; white-space: nowrap; }
+
+/* 設問番号（回答済みでチェック表示） */
+.q-num {
+  display: inline-block; min-width: 2.6em; text-align: center;
+  background: var(--accent-light); color: var(--accent-dark);
+  border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+  padding: 1px 8px; margin-right: 8px; vertical-align: 2px;
+}
+.q-block.answered .q-num { background: var(--accent); color: #fff; }
+.q-block.answered .q-num::after { content: " ✓"; }
+.q-block.err .q-num { background: var(--nps-detractor); color: #fff; }
 
 .choice-list { display: flex; flex-direction: column; gap: 8px; }
 .choice-list label {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border: 1px solid var(--grid); border-radius: 8px;
+  min-height: 48px; padding: 12px 14px; border: 1px solid var(--grid); border-radius: 8px;
   cursor: pointer; background: #fff;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.12s, background 0.12s;
 }
+.choice-list label:active { border-color: var(--accent); }
 .choice-list label:has(input:checked) { border-color: var(--accent); background: var(--accent-light); }
-.choice-list input { accent-color: var(--accent); width: 18px; height: 18px; }
+.choice-list input { accent-color: var(--accent); width: 20px; height: 20px; flex-shrink: 0; }
 
-.scale-row { display: flex; gap: 6px; flex-wrap: wrap; }
+/* スケール（NPS 0〜10／5段階）：グリッドで等幅に。狭い画面ではNPSを2段に折る */
+.scale-row { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); }
+.scale-row.likert { grid-template-columns: repeat(5, 1fr); }
+.scale-row.nps { grid-template-columns: repeat(11, 1fr); }
 .scale-row button {
-  flex: 1; min-width: 40px; min-height: 48px;
+  min-height: 48px; padding: 0;
   border: 1px solid var(--grid); border-radius: 8px; background: #fff;
-  font-size: 1rem; cursor: pointer; color: var(--ink);
+  font-size: 1.05rem; cursor: pointer; color: var(--ink); font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+  transition: background 0.12s, border-color 0.12s;
 }
+.scale-row button:active { background: var(--accent-light); border-color: var(--accent); }
+.scale-row button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .scale-row button.sel { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
-.scale-labels { display: flex; justify-content: space-between; margin-top: 6px; }
-.scale-labels span { font-size: 0.75rem; color: var(--muted); max-width: 45%; }
+.scale-labels { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.scale-labels span { font-size: 0.75rem; color: var(--muted); max-width: 48%; }
 .scale-labels span:last-child { text-align: right; }
 
 textarea {
@@ -92,11 +116,28 @@ textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 
 .btn-sub { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
 .btn-sub:hover { background: var(--accent-light); }
 .btn-sm { padding: 8px 14px; font-size: 0.85rem; }
-.submit-area { text-align: center; padding: 24px 0; }
+.btn-submit { width: 100%; max-width: 420px; padding: 16px 28px; }
+.submit-area { text-align: center; padding: 8px 0 calc(24px + env(safe-area-inset-bottom)); }
+
+/* 回答の進捗（画面上端の細いバー＋送信ボタン上のカウンタ） */
+.progress-track {
+  position: fixed; top: 0; left: 0; right: 0; height: 4px;
+  z-index: 20; pointer-events: none;
+}
+.progress-fill {
+  height: 100%; width: 0; background: var(--accent);
+  border-radius: 0 2px 2px 0; transition: width 0.25s ease;
+}
+.progress-note { font-size: 0.85rem; color: var(--ink-2); margin-bottom: 10px; }
 
 .error-msg { color: var(--nps-detractor); font-size: 0.85rem; margin-top: 8px; }
 .thanks { text-align: center; padding: 48px 12px; }
 .thanks .big { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; }
+.thanks-icon {
+  width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent-dark);
+  font-size: 1.8rem; font-weight: 700; line-height: 56px;
+}
 
 /* ===== 管理画面 ===== */
 .admin-bar {
@@ -145,8 +186,11 @@ table.list tr.rowlink:hover { background: var(--accent-light); }
 
 textarea.json-editor { min-height: 300px; font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; }
 
-@media (max-width: 480px) {
-  #app { padding: 10px; }
-  .card { padding: 14px; }
-  .scale-row button { min-width: 28px; padding: 0 2px; }
+@media (max-width: 520px) {
+  #app { padding: 12px; }
+  .card { padding: 16px 14px; }
+  /* NPSは6列×2段（0〜5／6〜10）。1段11個ではタップ幅が28px程度になり誤タップしやすい */
+  .scale-row.nps { grid-template-columns: repeat(6, 1fr); }
+  .scale-row { gap: 8px; }
+  .q-text { font-size: 0.95rem; line-height: 1.6; }
 }
