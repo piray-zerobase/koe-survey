@@ -168,3 +168,4 @@ responses (
 
 - 2026-07-07: 構想開始。名前=koe-survey、GitHub Pages＋Supabase、schema-driven設問定義、v1は4設問タイプ。
 - 2026-07-07: 費用再検討により Supabase Pro（$25/月。ただし2プロジェクト目以降は各+$10/月と判明）→ **無料プランに変更**。プロジェクトは新設せず既存 **zerobase-steps に同居**（1プロジェクト集約方針。soratobu も改修の折に zerobase-steps へ移行予定）。7日自動停止は keep-alive ping（GitHub Actions・毎日1回）で予防。自動バックアップがない代替として月1回のCSVエクスポートを運用ルールとする。
+- 2026-07-07: 戦略ロードマップv2を **docs/ROADMAP.md** に策定（作業パッケージWP-0〜9への分割・汎用化方針・競合リサーチに基づく機能候補の採否）。独立プロトタイプ置き場として **labs/** を新設（本体コードとは非連結・昇格基準はROADMAP参照）。
