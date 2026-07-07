@@ -1,5 +1,8 @@
 -- koe-survey スキーマ＋RLS
--- Supabaseダッシュボード > SQL Editor に全文貼り付けて実行する（1回だけ）
+-- Supabaseダッシュボード > SQL Editor に全文貼り付けて実行する
+-- ※再実行可能（既にあるテーブル・ポリシーはエラーにならず上書き・スキップされる）
+-- ※既存アプリと同居するプロジェクトでも安全（作成するのは surveys / responses と
+--   関数2つのみ。他のテーブルには一切触れない）
 
 -- ============ テーブル ============
 
@@ -30,12 +33,15 @@ alter table public.surveys   enable row level security;
 alter table public.responses enable row level security;
 
 -- 認証済みユーザー（平井さん）は全権
+drop policy if exists "auth_all_surveys" on public.surveys;
 create policy "auth_all_surveys" on public.surveys
   for all to authenticated using (true) with check (true);
 
+drop policy if exists "auth_select_responses" on public.responses;
 create policy "auth_select_responses" on public.responses
   for select to authenticated using (true);
 
+drop policy if exists "auth_delete_responses" on public.responses;
 create policy "auth_delete_responses" on public.responses
   for delete to authenticated using (true);
 
@@ -54,6 +60,7 @@ as $$
   select exists (select 1 from public.surveys where id = sid and status = 'open');
 $$;
 
+drop policy if exists "anon_insert_responses" on public.responses;
 create policy "anon_insert_responses" on public.responses
   for insert to anon
   with check (is_survey_open(survey_id));
