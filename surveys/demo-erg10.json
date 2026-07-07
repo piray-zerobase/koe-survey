@@ -1,0 +1,40 @@
+{
+  "id": "demo-erg10",
+  "slug": "demo-erg10",
+  "client": "demo",
+  "title": "職員エンゲージメント調査（デモ）",
+  "status": "open",
+  "created_at": "2026-07-07T00:00:00Z",
+  "definition": {
+    "intro": "3〜5分で終わります。半年に1回、職場の状態を定点観測するための調査です。率直にお答えください。",
+    "anonymous_note": "回答は匿名です。個人が特定される形で集計・共有されることはありません。",
+    "thanks": "いただいた声は、働きやすい職場づくりに活かしてまいります。",
+    "questions": [
+      { "id": "q1", "type": "likert5", "text": "自分に求められていることが分かっている", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "E" },
+      { "id": "q2", "type": "likert5", "text": "仕事に必要な環境・道具が整っている", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "E" },
+      { "id": "q3", "type": "likert5", "text": "自分の得意なこと・強みを活かせている", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "G" },
+      { "id": "q4", "type": "likert5", "text": "この1〜2週間で、良い仕事を認めてもらえた", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "R" },
+      { "id": "q5", "type": "likert5", "text": "職場に、自分を一人の人として気にかけてくれる人がいる", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "R" },
+      { "id": "q6", "type": "likert5", "text": "ここで働くことで成長できていると感じる", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "G" },
+      { "id": "q7", "type": "likert5", "text": "自分の意見を聞いてもらえる・尊重されている", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "R" },
+      { "id": "q8", "type": "likert5", "text": "組織の理念・目指す方向に共感できる", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "G" },
+      { "id": "q9", "type": "likert5", "text": "一緒に働く仲間は、質の高い仕事をしようとしている", "required": true,
+        "low": "そう思わない", "high": "そう思う", "axis": "R" },
+      { "id": "q10", "type": "likert5", "text": "これからもこの職場で働き続けたいと思う", "required": true,
+        "low": "そう思わない", "high": "そう思う", "short": "働き続けたい" },
+      { "id": "q11", "type": "text", "text": "もっと良くするためのアイデア／困っていること（任意）" }
+    ],
+    "scoring": {
+      "headline": "q10",
+      "erg_axes": true
+    }
+  }
+}

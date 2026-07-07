@@ -1,0 +1,152 @@
+/* koe-survey — 白ベース・青アクセント（クライアント成果物と同系トーン） */
+
+:root {
+  --surface-1: #fcfcfb;
+  --page: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --baseline: #c3c2b7;
+  --accent: #2a78d6;      /* series-1 blue */
+  --accent-dark: #1c5cab;
+  --accent-light: #cde2fb;
+  --nps-promoter: #2a78d6;
+  --nps-passive: #f0efec;
+  --nps-detractor: #e34948;
+  --border: rgba(11, 11, 11, 0.10);
+  --radius: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, -apple-system, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { max-width: 680px; margin: 0 auto; padding: 16px; }
+#app.wide { max-width: 1080px; }
+
+.loading { text-align: center; color: var(--muted); padding: 60px 0; }
+
+/* ===== カード ===== */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+h1 { font-size: 1.3rem; margin-bottom: 8px; }
+h2 { font-size: 1.1rem; margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
+h3 { font-size: 1rem; margin-bottom: 8px; color: var(--ink-2); }
+.sub { color: var(--ink-2); font-size: 0.9rem; }
+.note { color: var(--muted); font-size: 0.8rem; }
+
+/* ===== 回答フォーム ===== */
+.q-block { padding: 18px 0; border-bottom: 1px solid var(--grid); }
+.q-block:last-of-type { border-bottom: none; }
+.q-text { font-weight: 600; margin-bottom: 10px; }
+.q-req { color: var(--nps-detractor); font-size: 0.75rem; margin-left: 6px; font-weight: normal; }
+.q-opt-label { color: var(--muted); font-size: 0.75rem; margin-left: 6px; font-weight: normal; }
+
+.choice-list { display: flex; flex-direction: column; gap: 8px; }
+.choice-list label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--grid); border-radius: 8px;
+  cursor: pointer; background: #fff;
+}
+.choice-list label:has(input:checked) { border-color: var(--accent); background: var(--accent-light); }
+.choice-list input { accent-color: var(--accent); width: 18px; height: 18px; }
+
+.scale-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.scale-row button {
+  flex: 1; min-width: 40px; min-height: 48px;
+  border: 1px solid var(--grid); border-radius: 8px; background: #fff;
+  font-size: 1rem; cursor: pointer; color: var(--ink);
+}
+.scale-row button.sel { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+.scale-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+.scale-labels span { font-size: 0.75rem; color: var(--muted); max-width: 45%; }
+.scale-labels span:last-child { text-align: right; }
+
+textarea {
+  width: 100%; min-height: 90px; padding: 12px;
+  border: 1px solid var(--grid); border-radius: 8px;
+  font-family: inherit; font-size: 1rem; background: #fff;
+}
+textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.btn {
+  display: inline-block; padding: 14px 28px;
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btn:hover { background: var(--accent-dark); }
+.btn:disabled { background: var(--baseline); cursor: not-allowed; }
+.btn-sub { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+.btn-sub:hover { background: var(--accent-light); }
+.btn-sm { padding: 8px 14px; font-size: 0.85rem; }
+.submit-area { text-align: center; padding: 24px 0; }
+
+.error-msg { color: var(--nps-detractor); font-size: 0.85rem; margin-top: 8px; }
+.thanks { text-align: center; padding: 48px 12px; }
+.thanks .big { font-size: 1.4rem; font-weight: 700; margin-bottom: 12px; }
+
+/* ===== 管理画面 ===== */
+.admin-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.admin-bar .crumb a { color: var(--accent); text-decoration: none; }
+
+.login-box { max-width: 380px; margin: 60px auto; }
+.login-box input {
+  width: 100%; padding: 12px; margin-bottom: 12px;
+  border: 1px solid var(--grid); border-radius: 8px; font-size: 1rem; font-family: inherit;
+}
+
+table.list { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.list th, table.list td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--grid); }
+table.list th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+table.list tr.rowlink { cursor: pointer; }
+table.list tr.rowlink:hover { background: var(--accent-light); }
+
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.badge.open { background: #e3f2e3; color: #006300; }
+.badge.draft { background: var(--nps-passive); color: var(--ink-2); }
+.badge.closed { background: #f5e3e3; color: #8a2a2a; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.tile .t-label { font-size: 0.8rem; color: var(--ink-2); }
+.tile .t-value { font-size: 2rem; font-weight: 700; }
+.tile .t-note { font-size: 0.75rem; color: var(--muted); }
+
+.chart-wrap { overflow-x: auto; }
+.chart-wrap svg { display: block; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-size: 0.8rem; color: var(--ink-2); }
+.legend .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+
+.freetext-item { padding: 10px 0; border-bottom: 1px solid var(--grid); font-size: 0.9rem; }
+.freetext-item .meta { color: var(--muted); font-size: 0.75rem; }
+
+.demo-banner {
+  background: #fff8e1; border: 1px solid #eda100; border-radius: 8px;
+  padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px; color: #6b4a00;
+}
+
+.qr-url { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; background: var(--page); padding: 8px 10px; border-radius: 6px; word-break: break-all; margin: 6px 0; }
+
+textarea.json-editor { min-height: 300px; font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; }
+
+@media (max-width: 480px) {
+  #app { padding: 10px; }
+  .card { padding: 14px; }
+  .scale-row button { min-width: 28px; padding: 0 2px; }
+}
