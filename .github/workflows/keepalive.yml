@@ -11,6 +11,11 @@ on:
   schedule:
     - cron: "17 21 * * *" # 毎日 21:17 UTC（06:17 JST）
   workflow_dispatch: {} # Actionsタブから手動実行も可能
+  push:
+    branches: [main]
+    paths: # 接続設定やこのワークフロー自体が変わったら即実行して疎通確認する
+      - ".github/workflows/keepalive.yml"
+      - "js/config.js"
 
 permissions:
   contents: read
@@ -31,10 +36,12 @@ jobs:
             console.log("config.js が未設定（デモモード）のためスキップ");
             process.exit(0);
           }
-          const res = await fetch(c.supabaseUrl + "/rest/v1/", {
-            headers: { apikey: c.supabaseAnonKey, Authorization: "Bearer " + c.supabaseAnonKey }
-          });
+          // 新形式キー（sb_publishable_…）はapikeyのみ。旧形式（eyJ…）はBearerにも載せる
+          const headers = { apikey: c.supabaseAnonKey };
+          if (c.supabaseAnonKey.startsWith("eyJ")) headers.Authorization = "Bearer " + c.supabaseAnonKey;
+          const res = await fetch(c.supabaseUrl + "/rest/v1/", { headers });
           console.log("HTTP " + res.status);
+          if (!res.ok) console.log("エラー詳細: " + (await res.text()).slice(0, 300));
           process.exit(res.ok ? 0 : 1);
           EOF
           node /tmp/ping.mjs
