@@ -1,6 +1,8 @@
 // koe-survey 接続設定
 // Supabaseプロジェクト作成後、下記2つを埋めてコミットする。
-// ※anonキーは公開してよい設計（守りはRLS）。service_roleキーは絶対にここに書かない。
+// キーは Project Settings > API Keys の「Publishable key」（sb_publishable_…）を推奨。
+// 旧形式のanonキー（eyJ…）も使えるが、Supabaseが2026年末に廃止予定。
+// ※どちらも公開してよいキー（守りはRLS）。secret／service_roleキーは絶対にここに書かない。
 // 両方が空文字列の間は「デモモード」で動く（回答はこの端末のlocalStorageのみに保存）。
 window.KOE_CONFIG = {
   supabaseUrl: "https://tgqmbqgzouqmueuylkux.supabase.co",

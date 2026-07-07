@@ -18,10 +18,14 @@
   async function sbFetch(path, { method = "GET", body, auth = false, headers = {} } = {}) {
     const h = {
       apikey: cfg.supabaseAnonKey,
-      Authorization: `Bearer ${auth && token() ? token() : cfg.supabaseAnonKey}`,
       "Content-Type": "application/json",
       ...headers
     };
+    // Authorizationヘッダー：ログイン済みならユーザートークン。
+    // 未ログイン時は旧形式キー（eyJ…のJWT）のみBearerに載せる。
+    // 新形式キー（sb_publishable_…）はJWTではないためBearerに載せると401になる（apikeyだけで匿名アクセスできる）。
+    const bearer = auth && token() ? token() : (cfg.supabaseAnonKey.startsWith("eyJ") ? cfg.supabaseAnonKey : null);
+    if (bearer) h.Authorization = `Bearer ${bearer}`;
     const res = await fetch(`${cfg.supabaseUrl}${path}`, {
       method, headers: h, body: body ? JSON.stringify(body) : undefined
     });
