@@ -1,0 +1,40 @@
+# Supabase無料プランの「7日間アクセスなしで自動一時停止」を予防するkeep-alive。
+# js/config.js の接続情報を使って1日1回REST APIにアクセスし、利用実績を作る。
+# config.js が空（デモモード）の間は何もせず正常終了する。
+#
+# 注意：GitHubの仕様で、リポジトリに60日間更新がないとスケジュール実行は
+# 自動で無効化される（事前に通知メールが届く。コミットするか、Actionsタブから
+# 手動で再有効化すれば復帰する）。
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 21 * * *" # 毎日 21:17 UTC（06:17 JST）
+  workflow_dispatch: {} # Actionsタブから手動実行も可能
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: js/config.js の接続情報でSupabaseにping
+        run: |
+          cat > /tmp/ping.mjs <<'EOF'
+          import { readFileSync } from "node:fs";
+          globalThis.window = {};
+          new Function(readFileSync("js/config.js", "utf8"))();
+          const c = globalThis.window.KOE_CONFIG || {};
+          if (!c.supabaseUrl || !c.supabaseAnonKey) {
+            console.log("config.js が未設定（デモモード）のためスキップ");
+            process.exit(0);
+          }
+          const res = await fetch(c.supabaseUrl + "/rest/v1/", {
+            headers: { apikey: c.supabaseAnonKey, Authorization: "Bearer " + c.supabaseAnonKey }
+          });
+          console.log("HTTP " + res.status);
+          process.exit(res.ok ? 0 : 1);
+          EOF
+          node /tmp/ping.mjs
