@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>【labs】キオスクモード試作 — コエ</title>
+<style>
+/* labs試作：本体CSSとは独立（配色は本体と同系） */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --accent:#2a78d6; --accent-dark:#1c5cab; --accent-light:#cde2fb;
+        --page:#f9f9f7; --ink:#0b0b0b; --muted:#898781; --grid:#e1e0d9; }
+html,body { height:100%; }
+body { font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+       background:var(--page); color:var(--ink); display:flex; flex-direction:column;
+       -webkit-user-select:none; user-select:none; touch-action:manipulation; }
+header { padding:14px 20px; display:flex; justify-content:space-between; align-items:center;
+         color:var(--muted); font-size:0.85rem; }
+header .count { background:#fff; border:1px solid var(--grid); border-radius:999px; padding:4px 14px; }
+main { flex:1; display:flex; align-items:center; justify-content:center; padding:16px; }
+.card { background:#fff; border:1px solid rgba(11,11,11,.1); border-radius:16px;
+        max-width:720px; width:100%; padding:36px 28px; text-align:center; }
+.step { color:var(--accent); font-weight:700; font-size:0.95rem; margin-bottom:14px; }
+.q { font-size:1.5rem; font-weight:700; line-height:1.5; margin-bottom:28px; }
+.opts { display:grid; gap:12px; }
+.opts.likert { grid-template-columns:repeat(5,1fr); }
+.opts.nps { grid-template-columns:repeat(6,1fr); }
+.opts.choice { grid-template-columns:1fr; }
+.opts button { min-height:64px; font-size:1.3rem; font-family:inherit; background:#fff;
+        border:2px solid var(--grid); border-radius:12px; cursor:pointer; color:var(--ink);
+        transition:background .1s,border-color .1s; -webkit-tap-highlight-color:transparent; }
+.opts.choice button { font-size:1.1rem; text-align:left; padding:0 22px; }
+.opts button:active { background:var(--accent-light); border-color:var(--accent); }
+.labels { display:flex; justify-content:space-between; margin-top:12px; color:var(--muted); font-size:0.9rem; }
+.thanks-icon { width:84px; height:84px; margin:0 auto 20px; border-radius:50%;
+        background:var(--accent-light); color:var(--accent-dark); font-size:2.6rem;
+        font-weight:700; line-height:84px; }
+.big { font-size:1.7rem; font-weight:700; margin-bottom:12px; }
+.reset-note { margin-top:24px; color:var(--muted); font-size:0.95rem; }
+.start-btn { margin-top:8px; min-height:76px; width:100%; font-size:1.4rem; font-weight:700;
+        font-family:inherit; background:var(--accent); color:#fff; border:none; border-radius:14px; cursor:pointer; }
+.sub { color:#52514e; font-size:1.05rem; line-height:1.8; margin-bottom:20px; }
+footer { text-align:center; color:var(--muted); font-size:0.75rem; padding:12px; }
+</style>
+</head>
+<body>
+<header>
+  <span>コエ — キオスクモード試作（labs）</span>
+  <span class="count">本日の回答：<strong id="today-count">0</strong>件</span>
+</header>
+<main><div class="card" id="stage"></div></main>
+<footer>回答は匿名です。個人が特定されることはありません。</footer>
+<script>
+// ============ デモ設問（本番はdefinition JSONから供給する想定） ============
+const QUESTIONS = [
+  { type:"nps", text:"当院をご家族やご友人に勧めたいと思いますか？", low:"0：全く思わない", high:"10：強くそう思う" },
+  { type:"likert", text:"受付スタッフの挨拶・笑顔はいかがでしたか？", low:"1：気になった", high:"5：とても良かった" },
+  { type:"likert", text:"本日の待ち時間はいかがでしたか？", low:"1：とても長かった", high:"5：ちょうど良かった" },
+  { type:"choice", text:"本日の来院目的を教えてください",
+    options:["メンテナンス（クリーニング）","治療（虫歯・歯周病など）","急患・痛みでの来院","その他"] }
+];
+const THANKS_SEC = 6;    // サンクス画面の表示秒数（自動で先頭へ）
+const IDLE_SEC   = 45;   // 途中放置でリセットするまでの秒数
+
+const stage = document.getElementById("stage");
+let idx = -1, idleTimer = null, countdownTimer = null;
+
+// 本日の回答数（端末ローカル・日付キー）
+const todayKey = "koe_kiosk_" + new Date().toISOString().slice(0,10);
+function refreshCount(){ document.getElementById("today-count").textContent = localStorage.getItem(todayKey) || 0; }
+
+function resetIdle(){
+  clearTimeout(idleTimer);
+  if (idx >= 0) idleTimer = setTimeout(showStart, IDLE_SEC * 1000); // 途中放置→振り出しへ
+}
+document.addEventListener("pointerdown", resetIdle);
+
+function showStart(){
+  clearTimeout(idleTimer); clearInterval(countdownTimer);
+  idx = -1;
+  stage.innerHTML = `
+    <p class="big">受診後アンケートにご協力ください</p>
+    <p class="sub">4問・30秒で終わります。<br>回答は匿名で、スタッフには誰が答えたか分かりません。</p>
+    <button class="start-btn" onclick="next()">はじめる</button>`;
+}
+
+function next(){
+  idx++;
+  if (idx >= QUESTIONS.length) return showThanks();
+  const q = QUESTIONS[idx];
+  let opts = "";
+  if (q.type === "nps")
+    opts = `<div class="opts nps">${Array.from({length:11},(_,i)=>`<button onclick="next()">${i}</button>`).join("")}</div>
+            <div class="labels"><span>${q.low}</span><span>${q.high}</span></div>`;
+  else if (q.type === "likert")
+    opts = `<div class="opts likert">${[1,2,3,4,5].map(i=>`<button onclick="next()">${i}</button>`).join("")}</div>
+            <div class="labels"><span>${q.low}</span><span>${q.high}</span></div>`;
+  else
+    opts = `<div class="opts choice">${q.options.map(o=>`<button onclick="next()">${o}</button>`).join("")}</div>`;
+  stage.innerHTML = `<p class="step">Q${idx+1} / ${QUESTIONS.length}</p><p class="q">${q.text}</p>${opts}`;
+  resetIdle();
+}
+
+function showThanks(){
+  clearTimeout(idleTimer);
+  localStorage.setItem(todayKey, Number(localStorage.getItem(todayKey)||0) + 1);
+  refreshCount();
+  let sec = THANKS_SEC;
+  stage.innerHTML = `
+    <div class="thanks-icon">✓</div>
+    <p class="big">ありがとうございました</p>
+    <p class="sub">いただいた声は、より良い医院づくりに活かします。</p>
+    <p class="reset-note">この画面は <strong id="cd">${sec}</strong> 秒後に最初に戻ります</p>`;
+  countdownTimer = setInterval(()=>{
+    sec--;
+    const el = document.getElementById("cd");
+    if (el) el.textContent = sec;
+    if (sec <= 0) showStart();
+  }, 1000);
+}
+
+refreshCount();
+showStart();
+</script>
+</body>
+</html>

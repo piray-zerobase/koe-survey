@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>【labs】パルスサーベイ試作 — コエ</title>
+<style>
+/* labs試作：本体CSSとは独立（配色は本体と同系） */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --accent:#2a78d6; --accent-dark:#1c5cab; --accent-light:#cde2fb;
+        --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; }
+html,body { height:100%; }
+body { font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+       background:var(--page); color:var(--ink); display:flex; align-items:center;
+       justify-content:center; padding:16px; touch-action:manipulation; }
+.card { background:#fff; border:1px solid rgba(11,11,11,.1); border-radius:16px;
+        max-width:440px; width:100%; padding:32px 24px; text-align:center; }
+.tag { display:inline-block; background:var(--accent-light); color:var(--accent-dark);
+       border-radius:999px; padding:3px 14px; font-size:0.8rem; font-weight:700; margin-bottom:16px; }
+.q { font-size:1.25rem; font-weight:700; line-height:1.6; margin-bottom:24px; }
+.opts { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.opts button { min-height:60px; border:2px solid var(--grid); border-radius:12px; background:#fff;
+        cursor:pointer; font-family:inherit; display:flex; flex-direction:column; align-items:center;
+        justify-content:center; gap:2px; -webkit-tap-highlight-color:transparent; padding:6px 0; }
+.opts button .n { font-size:1.2rem; font-weight:700; }
+.opts button .f { font-size:1.15rem; line-height:1; }
+.opts button:active { background:var(--accent-light); border-color:var(--accent); }
+.labels { display:flex; justify-content:space-between; margin-top:8px; color:var(--muted); font-size:0.75rem; }
+.note { color:var(--muted); font-size:0.78rem; margin-top:20px; line-height:1.7; }
+.thanks-icon { width:64px; height:64px; margin:0 auto 14px; border-radius:50%;
+        background:var(--accent-light); color:var(--accent-dark); font-size:2rem;
+        font-weight:700; line-height:64px; }
+.big { font-size:1.3rem; font-weight:700; margin-bottom:8px; }
+.sub { color:var(--ink2); font-size:0.9rem; margin-bottom:20px; }
+h3 { font-size:0.85rem; color:var(--ink2); margin-bottom:8px; text-align:left; }
+svg { display:block; width:100%; height:auto; }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- 回答ビュー：今週の1問だけ -->
+  <div id="ask">
+    <span class="tag">今週の1問 — 7月 第2週</span>
+    <p class="q">今週、あなたの仕事は<br>順調に進んでいますか？</p>
+    <div class="opts">
+      <button onclick="answer(1)"><span class="f">😞</span><span class="n">1</span></button>
+      <button onclick="answer(2)"><span class="f">🙁</span><span class="n">2</span></button>
+      <button onclick="answer(3)"><span class="f">😐</span><span class="n">3</span></button>
+      <button onclick="answer(4)"><span class="f">🙂</span><span class="n">4</span></button>
+      <button onclick="answer(5)"><span class="f">😄</span><span class="n">5</span></button>
+    </div>
+    <div class="labels"><span>そう思わない</span><span>とてもそう思う</span></div>
+    <p class="note">毎週火曜に1問だけ届きます（所要10秒）。<br>回答は匿名で、チーム単位（5名以上）でのみ集計されます。</p>
+  </div>
+
+  <!-- サンクスビュー：回答者にもチームの推移を少しだけ返す -->
+  <div id="done" class="hidden">
+    <div class="thanks-icon">✓</div>
+    <p class="big">今週もありがとうございました</p>
+    <p class="sub">10秒のご協力が、職場の改善につながります。</p>
+    <h3>チーム全体の推移（直近5週・平均）</h3>
+    <svg viewBox="0 0 380 110" id="spark"></svg>
+    <p class="note">※ あなた個人の回答は表示されません（匿名・チーム平均のみ）<br>また来週の火曜にお会いしましょう。</p>
+  </div>
+
+</div>
+<script>
+// ============ デモデータ：直近5週のチーム平均（本番は集計APIから） ============
+const WEEKS = [ ["6/9",3.2], ["6/16",3.4], ["6/23",3.3], ["6/30",3.7], ["7/7",null] ]; // 今週は回答で確定
+
+function answer(v){
+  WEEKS[4][1] = (3.7*0.8 + v*0.2); // デモ用：自分の回答を混ぜた「らしい」平均を作る
+  document.getElementById("ask").classList.add("hidden");
+  document.getElementById("done").classList.remove("hidden");
+  drawSpark();
+}
+
+function drawSpark(){
+  const svg = document.getElementById("spark");
+  const W=380,H=110,P={t:14,r:16,b:22,l:30}, min=1,max=5;
+  const x=i=>P.l+(W-P.l-P.r)*i/(WEEKS.length-1), y=v=>P.t+(H-P.t-P.b)*(1-(v-min)/(max-min));
+  let g="";
+  [1,3,5].forEach(v=>{ g+=`<line x1="${P.l}" y1="${y(v)}" x2="${W-P.r}" y2="${y(v)}" stroke="#e1e0d9"/>
+    <text x="${P.l-5}" y="${y(v)+3}" text-anchor="end" font-size="9" fill="#898781">${v}</text>`; });
+  const pts = WEEKS.map((w,i)=>`${x(i)},${y(w[1])}`).join(" ");
+  g += `<polyline points="${pts}" fill="none" stroke="#2a78d6" stroke-width="2.5"/>`;
+  WEEKS.forEach((w,i)=>{
+    g += `<circle cx="${x(i)}" cy="${y(w[1])}" r="3.2" fill="#2a78d6"/>
+          <text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="9" fill="#898781">${w[0]}</text>`;
+  });
+  const last = WEEKS[4];
+  g += `<text x="${x(4)}" y="${y(last[1])-8}" text-anchor="middle" font-size="10" font-weight="bold" fill="#1c5cab">${last[1].toFixed(1)}</text>`;
+  svg.innerHTML = g;
+}
+</script>
+</body>
+</html>

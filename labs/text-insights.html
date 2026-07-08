@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>【labs】自由記述インサイト試作 — コエ</title>
+<style>
+/* labs試作：本体CSSとは独立（配色は本体と同系） */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --accent:#2a78d6; --accent-dark:#1c5cab; --accent-light:#cde2fb;
+        --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9;
+        --detractor:#e34948; }
+body { font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+       background:var(--page); color:var(--ink); padding:20px 14px; }
+.wrap { max-width:860px; margin:0 auto; }
+h1 { font-size:1.2rem; margin-bottom:4px; }
+.lead { color:var(--muted); font-size:0.82rem; margin-bottom:16px; }
+.card { background:#fff; border:1px solid rgba(11,11,11,.1); border-radius:12px; padding:18px; margin-bottom:14px; }
+h2 { font-size:1rem; border-left:4px solid var(--accent); padding-left:9px; margin-bottom:12px; }
+.kw { display:flex; align-items:center; gap:10px; margin-bottom:7px; cursor:pointer;
+      border-radius:8px; padding:4px 6px; -webkit-tap-highlight-color:transparent; }
+.kw:hover { background:var(--page); }
+.kw.active { background:var(--accent-light); }
+.kw .w { min-width:7.5em; font-size:0.9rem; font-weight:600; }
+.kw .bar { flex:1; height:16px; background:#f0efec; border-radius:4px; overflow:hidden; }
+.kw .bar i { display:block; height:100%; background:var(--accent); border-radius:4px; }
+.kw .n { min-width:2.5em; text-align:right; color:var(--ink2); font-size:0.85rem; }
+.hint { color:var(--muted); font-size:0.78rem; margin-top:10px; }
+.comment { padding:10px 4px; border-bottom:1px solid var(--grid); font-size:0.9rem; line-height:1.7; }
+.comment:last-child { border-bottom:none; }
+.comment .m { color:var(--muted); font-size:0.72rem; }
+mark { background:var(--accent-light); color:var(--accent-dark); font-weight:700; border-radius:3px; padding:0 2px; }
+.clear { display:none; margin-left:8px; font-size:0.8rem; color:var(--accent); cursor:pointer;
+         background:none; border:none; font-family:inherit; text-decoration:underline; }
+.clear.show { display:inline; }
+.count-note { color:var(--ink2); font-size:0.82rem; margin-bottom:8px; }
+.privacy { background:#fff8e1; border:1px solid #eda100; color:#6b4a00;
+           border-radius:8px; padding:9px 13px; font-size:0.8rem; margin-bottom:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>自由記述インサイト（labs試作）</h1>
+  <p class="lead">デモ回答28件から頻出キーワードを自動抽出。クリックで該当コメントに絞り込めます。本実装（WP-6）では管理画面の自由記述欄に組み込む想定。</p>
+  <div class="privacy">🔒 分析はすべてこのブラウザ内で行われ、回答データはどこにも送信されません（匿名性の設計を維持）。</div>
+
+  <div class="card">
+    <h2>頻出キーワード <button class="clear" id="clear" onclick="filter(null)">✕ 絞り込み解除</button></h2>
+    <div id="ranking"></div>
+    <p class="hint">※ 2文字以上の語（漢字・カタカナ・英数）を機械的に数えた参考値です。文脈の解釈はコンサルタントが行います。</p>
+  </div>
+
+  <div class="card">
+    <h2>コメント一覧</h2>
+    <p class="count-note" id="count"></p>
+    <div id="comments"></div>
+  </div>
+</div>
+
+<script>
+// ============ デモ自由記述（28件・歯科の想定） ============
+const COMMENTS = [
+  ["説明がとても丁寧で分かりやすかったです。安心して治療を受けられました。","unit1"],
+  ["待ち時間が長く、予約の意味がないように感じました。","unit2"],
+  ["受付の方の笑顔が素敵で、いつも気持ちよく通えています。","unit1"],
+  ["治療の説明が専門用語ばかりで少し分かりにくかったです。","unit3"],
+  ["院内がとても清潔で気持ちが良いです。","unit1"],
+  ["診療台に座ってからの待ち時間が長かったです。","unit2"],
+  ["先生が今後の治療の見通しを丁寧に説明してくれて安心しました。","unit1"],
+  ["予約時間通りに案内してもらえて助かりました。","unit3"],
+  ["衛生士さんのクリーニングがとても丁寧でした。","unit1"],
+  ["待合室が混んでいて、待ち時間の目安が分からず不安でした。","unit2"],
+  ["子どもが怖がらないように声かけしてくれて感謝しています。","unit3"],
+  ["費用の説明が事前にあり、安心してお願いできました。","unit1"],
+  ["受付での会計にすこし時間がかかりました。","unit2"],
+  ["痛みへの配慮があり、ほとんど痛くありませんでした。","unit1"],
+  ["説明のときに模型や写真を使ってくれて分かりやすかったです。","unit3"],
+  ["予約が取りにくいのが残念です。人気の証拠だと思いますが。","unit2"],
+  ["清潔感があり、スタッフの皆さんの連携も良いと感じました。","unit1"],
+  ["治療中の声かけが安心につながりました。","unit3"],
+  ["駐車場が狭くて停めにくいです。","unit2"],
+  ["丁寧なカウンセリングで、不安なことを全部聞いてもらえました。","unit1"],
+  ["待ち時間に治療内容の資料を読めるようにしてほしいです。","unit2"],
+  ["先生も衛生士さんも説明が丁寧で信頼できます。","unit1"],
+  ["会計の待ち時間が少し長い気がします。","unit3"],
+  ["いつも清潔で安心です。子どもも嫌がらずに通っています。","unit1"],
+  ["麻酔が痛くなかったのに驚きました。技術が高いと思います。","unit3"],
+  ["受付の電話対応がとても親切でした。","unit1"],
+  ["予約の変更がしやすくて助かっています。","unit2"],
+  ["治療後のフォローの連絡があり、大切にされていると感じました。","unit1"]
+];
+
+// ============ 簡易トークナイズ：漢字・カタカナ・英数の連続を語として抽出 ============
+const STOP = new Set(["こと","もの","ところ","ため","よう","さん","先生","医院","当院","治療","感じ","気持ち","時間","今後","事前","本日","皆さん","全部","少し","とても","一覧"]);
+// ※「治療」「時間」など どのコメントにも出る一般語は除外し、特徴語を浮かせる
+
+function tokens(text){
+  const m = text.match(/[一-鿿]{2,}|[゠-ヿー]{2,}|[A-Za-z0-9]{2,}/g) || [];
+  return m.filter(w => !STOP.has(w));
+}
+
+const freq = {};
+COMMENTS.forEach(([t]) => new Set(tokens(t)).forEach(w => freq[w] = (freq[w]||0)+1));
+const TOP = Object.entries(freq).filter(([,n]) => n >= 2).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+let current = null;
+
+function render(){
+  const maxN = TOP[0][1];
+  document.getElementById("ranking").innerHTML = TOP.map(([w,n]) =>
+    `<div class="kw ${current===w?"active":""}" onclick="filter('${w}')">
+       <span class="w">${w}</span>
+       <span class="bar"><i style="width:${n/maxN*100}%"></i></span>
+       <span class="n">${n}件</span>
+     </div>`).join("");
+  document.getElementById("clear").classList.toggle("show", !!current);
+
+  const list = current ? COMMENTS.filter(([t]) => t.includes(current)) : COMMENTS;
+  document.getElementById("count").textContent =
+    current ? `「${current}」を含むコメント：${list.length}件` : `全${COMMENTS.length}件`;
+  document.getElementById("comments").innerHTML = list.map(([t,ch]) => {
+    const html = current ? t.split(current).join(`<mark>${current}</mark>`) : t;
+    return `<div class="comment">${html}<div class="m">2026-06 ・ ${ch}</div></div>`;
+  }).join("");
+}
+
+function filter(w){ current = (current === w) ? null : w; render(); }
+render();
+</script>
+</body>
+</html>
