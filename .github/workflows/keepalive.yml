@@ -1,6 +1,12 @@
 # Supabase無料プランの「7日間アクセスなしで自動一時停止」を予防するkeep-alive。
 # js/config.js の接続情報を使って1日1回REST APIにアクセスし、利用実績を作る。
-# config.js が空（デモモード）の間は何もせず正常終了する。
+#
+# 状態ごとの動き：
+#   - config.js が空（デモモード）           → 何もせず正常終了
+#   - 旧形式キー（eyJ…）が設定されている     → 警告を出して正常終了（本プロジェクトでは
+#     旧形式キーが無効のため。新形式キーへの差し替え待ちの間、失敗通知を出さない。
+#     停止予防は同居アプリ（zerobase-steps）の通常アクセスが当面担保する）
+#   - 新形式キー（sb_publishable_…）         → pingを実行し、失敗したらエラー通知
 #
 # 注意：GitHubの仕様で、リポジトリに60日間更新がないとスケジュール実行は
 # 自動で無効化される（事前に通知メールが届く。コミットするか、Actionsタブから
@@ -11,6 +17,11 @@ on:
   schedule:
     - cron: "17 21 * * *" # 毎日 21:17 UTC（06:17 JST）
   workflow_dispatch: {} # Actionsタブから手動実行も可能
+  push:
+    branches: [main]
+    paths: # 接続設定やこのワークフロー自体が変わったら即実行して疎通確認する
+      - ".github/workflows/keepalive.yml"
+      - "js/config.js"
 
 permissions:
   contents: read
@@ -31,10 +42,15 @@ jobs:
             console.log("config.js が未設定（デモモード）のためスキップ");
             process.exit(0);
           }
-          const res = await fetch(c.supabaseUrl + "/rest/v1/", {
-            headers: { apikey: c.supabaseAnonKey, Authorization: "Bearer " + c.supabaseAnonKey }
-          });
+          if (c.supabaseAnonKey.startsWith("eyJ")) {
+            console.log("⚠ 旧形式キー（eyJ…）が設定されています。このプロジェクトでは旧形式キーが");
+            console.log("  使えないため、pingをスキップします（失敗通知は出しません）。");
+            console.log("  新形式キー（sb_publishable_…）への差し替え後、自動で監視が有効になります。");
+            process.exit(0);
+          }
+          const res = await fetch(c.supabaseUrl + "/rest/v1/", { headers: { apikey: c.supabaseAnonKey } });
           console.log("HTTP " + res.status);
+          if (!res.ok) console.log("エラー詳細: " + (await res.text()).slice(0, 300));
           process.exit(res.ok ? 0 : 1);
           EOF
           node /tmp/ping.mjs
